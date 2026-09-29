@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>태국금 판매 수익 관리 / ระบบจัดการรายได้ทองไทย</title>
+    <title>항텅솜분 태국금 판매 수익 관리 / ระบบจัดการรายได้ทองไทย</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -23,7 +23,7 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1150px;
             margin: 0 auto;
         }
 
@@ -91,8 +91,15 @@
             color: #2b7a78;
         }
 
-        .submit-btn {
+        .button-group {
             grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .submit-btn {
+            flex: 1;
             background-color: #28a745;
             color: white;
             border: none;
@@ -101,11 +108,26 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
         }
 
         .submit-btn:hover {
             background-color: #218838;
+        }
+
+        .cancel-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+
+        .cancel-btn:hover {
+            background-color: #5a6268;
         }
 
         .table-container {
@@ -123,6 +145,7 @@
             border: 1px solid var(--border-color);
             padding: 10px;
             text-align: center;
+            white-space: nowrap;
         }
 
         th {
@@ -133,6 +156,42 @@
         .profit-text {
             color: #28a745;
             font-weight: bold;
+        }
+
+        .action-btn-group {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .btn-edit {
+            background-color: #ffc107;
+            color: #212529;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .btn-edit:hover {
+            background-color: #e0a800;
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .btn-delete:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
@@ -147,6 +206,7 @@
     <!-- 입력 폼 -->
     <div class="card">
         <form id="sales-form">
+            <input type="hidden" id="edit_id" value="">
             <div class="form-grid">
                 <div class="form-group">
                     <label id="lbl-item-type">2-1. 아이템 종류</label>
@@ -212,7 +272,10 @@
                     <input type="text" id="deposit_bank" placeholder="예: 국민은행">
                 </div>
 
-                <button type="submit" class="submit-btn" id="btn-submit">등록하기</button>
+                <div class="button-group">
+                    <button type="submit" class="submit-btn" id="btn-submit">등록하기</button>
+                    <button type="button" class="cancel-btn" id="btn-cancel" onclick="cancelEdit()">취소</button>
+                </div>
             </div>
         </form>
     </div>
@@ -233,6 +296,7 @@
                     <th id="th-profit">수익</th>
                     <th id="th-remit">송금은행</th>
                     <th id="th-deposit">입금은행</th>
+                    <th id="th-action">관리</th>
                 </tr>
             </thead>
             <tbody id="sales-list">
@@ -249,6 +313,7 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentLang = 'ko';
+    let salesDataStore = [];
 
     const translations = {
         ko: {
@@ -265,6 +330,8 @@
             remitBank: "5. 송금은행",
             depositBank: "6. 입금은행",
             submitBtn: "등록하기",
+            updateBtn: "수정완료",
+            cancelBtn: "취소",
             thId: "순번",
             thItemType: "종류",
             thWeight: "무게(g)",
@@ -275,7 +342,14 @@
             thCost: "매입가",
             thProfit: "수익",
             thRemit: "송금은행",
-            thDeposit: "입금은행"
+            thDeposit: "입금은행",
+            thAction: "관리",
+            btnEdit: "수정",
+            btnDelete: "삭제",
+            confirmDelete: "정말로 삭제하시겠습니까?",
+            saveSuccess: "성공적으로 저장되었습니다.",
+            updateSuccess: "성공적으로 수정되었습니다.",
+            deleteSuccess: "성공적으로 삭제되었습니다."
         },
         th: {
             title: "ระบบจัดการรายได้ทองไทย",
@@ -291,6 +365,8 @@
             remitBank: "5. ธนาคารโอน",
             depositBank: "6. ธนาคารรับเงิน",
             submitBtn: "บันทึกข้อมูล",
+            updateBtn: "บันทึกการแก้ไข",
+            cancelBtn: "ยกเลิก",
             thId: "ลำดับ",
             thItemType: "ประเภท",
             thWeight: "น้ำหนัก(g)",
@@ -301,7 +377,14 @@
             thCost: "ราคารับซื้อ",
             thProfit: "กำไร",
             thRemit: "ธนาคารโอน",
-            thDeposit: "ธนาคารรับเงิน"
+            thDeposit: "ธนาคารรับเงิน",
+            thAction: "จัดการ",
+            btnEdit: "แก้ไข",
+            btnDelete: "ลบ",
+            confirmDelete: "คุณต้องการลบข้อมูลนี้ใช่หรือไม่?",
+            saveSuccess: "บันทึกข้อมูลเรียบร้อยแล้ว",
+            updateSuccess: "แก้ไขข้อมูลเรียบร้อยแล้ว",
+            deleteSuccess: "ลบข้อมูลเรียบร้อยแล้ว"
         }
     };
 
@@ -321,7 +404,10 @@
         document.getElementById('lbl-profit').innerText = t.profit;
         document.getElementById('lbl-remit-bank').innerText = t.remitBank;
         document.getElementById('lbl-deposit-bank').innerText = t.depositBank;
-        document.getElementById('btn-submit').innerText = t.submitBtn;
+
+        const editId = document.getElementById('edit_id').value;
+        document.getElementById('btn-submit').innerText = editId ? t.updateBtn : t.submitBtn;
+        document.getElementById('btn-cancel').innerText = t.cancelBtn;
 
         document.getElementById('th-id').innerText = t.thId;
         document.getElementById('th-item-type').innerText = t.thItemType;
@@ -334,6 +420,9 @@
         document.getElementById('th-profit').innerText = t.thProfit;
         document.getElementById('th-remit').innerText = t.thRemit;
         document.getElementById('th-deposit').innerText = t.thDeposit;
+        document.getElementById('th-action').innerText = t.thAction;
+
+        loadSalesData();
     }
 
     function calculateProfit() {
@@ -344,6 +433,8 @@
 
     document.getElementById('sales-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const t = translations[currentLang];
+        const editId = document.getElementById('edit_id').value;
 
         const formData = {
             item_type: document.getElementById('item_type').value,
@@ -357,19 +448,88 @@
             deposit_bank: document.getElementById('deposit_bank').value
         };
 
-        const { data, error } = await supabaseClient
-            .from('gold_sales')
-            .insert([formData]);
+        if (editId) {
+            // 수정 모드
+            const { error } = await supabaseClient
+                .from('gold_sales')
+                .update(formData)
+                .eq('id', editId);
 
-        if (error) {
-            alert('저장 실패 / บันทึกไม่สำเร็จ: ' + error.message);
+            if (error) {
+                alert(error.message);
+            } else {
+                alert(t.updateSuccess);
+                cancelEdit();
+                loadSalesData();
+            }
         } else {
-            alert('성공적으로 저장되었습니다 / บันทึกข้อมูลเรียบร้อยแล้ว');
-            document.getElementById('sales-form').reset();
-            document.getElementById('profit').value = "0";
-            loadSalesData();
+            // 신규 등록 모드
+            const { error } = await supabaseClient
+                .from('gold_sales')
+                .insert([formData]);
+
+            if (error) {
+                alert(error.message);
+            } else {
+                alert(t.saveSuccess);
+                document.getElementById('sales-form').reset();
+                document.getElementById('profit').value = "0";
+                loadSalesData();
+            }
         }
     });
+
+    function editRow(id) {
+        const row = salesDataStore.find(item => item.id === id);
+        if (!row) return;
+
+        const t = translations[currentLang];
+        document.getElementById('edit_id').value = row.id;
+        document.getElementById('item_type').value = row.item_type;
+        document.getElementById('weight_g').value = row.weight_g;
+        document.getElementById('channel').value = row.channel;
+        document.getElementById('customer_name').value = row.customer_name;
+        document.getElementById('phone').value = row.phone || '';
+        document.getElementById('selling_price').value = row.selling_price;
+        document.getElementById('cost_price').value = row.cost_price;
+        document.getElementById('remit_bank').value = row.remit_bank || '';
+        document.getElementById('deposit_bank').value = row.deposit_bank || '';
+        calculateProfit();
+
+        document.getElementById('btn-submit').innerText = t.updateBtn;
+        document.getElementById('btn-cancel').style.display = 'block';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        const t = translations[currentLang];
+        document.getElementById('edit_id').value = '';
+        document.getElementById('sales-form').reset();
+        document.getElementById('profit').value = "0";
+        document.getElementById('btn-submit').innerText = t.submitBtn;
+        document.getElementById('btn-cancel').style.display = 'none';
+    }
+
+    async function deleteRow(id) {
+        const t = translations[currentLang];
+        if (!confirm(t.confirmDelete)) return;
+
+        const { error } = await supabaseClient
+            .from('gold_sales')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert(error.message);
+        } else {
+            alert(t.deleteSuccess);
+            if (document.getElementById('edit_id').value == id) {
+                cancelEdit();
+            }
+            loadSalesData();
+        }
+    }
 
     async function loadSalesData() {
         const { data, error } = await supabaseClient
@@ -382,10 +542,12 @@
             return;
         }
 
+        salesDataStore = data || [];
+        const t = translations[currentLang];
         const tbody = document.getElementById('sales-list');
         tbody.innerHTML = '';
 
-        data.forEach(row => {
+        salesDataStore.forEach(row => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${row.id}</td>
@@ -399,6 +561,12 @@
                 <td class="profit-text">${Number(row.profit).toLocaleString()}</td>
                 <td>${row.remit_bank || '-'}</td>
                 <td>${row.deposit_bank || '-'}</td>
+                <td>
+                    <div class="action-btn-group">
+                        <button class="btn-edit" onclick="editRow(${row.id})">${t.btnEdit}</button>
+                        <button class="btn-delete" onclick="deleteRow(${row.id})">${t.btnDelete}</button>
+                    </div>
+                </td>
             `;
             tbody.appendChild(tr);
         });
