@@ -23,7 +23,7 @@
         }
 
         .container {
-            max-width: 1150px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -57,12 +57,12 @@
             border-radius: 8px;
             padding: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
         }
 
@@ -130,6 +130,90 @@
             background-color: #5a6268;
         }
 
+        /* 날짜 조회 카드 */
+        .filter-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .filter-grid .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-search {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            height: 41px;
+        }
+
+        .btn-search:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            height: 41px;
+        }
+
+        .btn-reset:hover {
+            background-color: #545b62;
+        }
+
+        /* 합계 대시보드 카드리스트 */
+        .summary-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 5px solid #6c757d;
+        }
+
+        .summary-card.selling {
+            border-left-color: #007bff;
+        }
+
+        .summary-card.cost {
+            border-left-color: #dc3545;
+        }
+
+        .summary-card.profit {
+            border-left-color: #28a745;
+        }
+
+        .summary-title {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .summary-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #222;
+        }
+
         .table-container {
             overflow-x: auto;
         }
@@ -150,6 +234,11 @@
 
         th {
             background-color: #f1f3f5;
+            font-weight: bold;
+        }
+
+        tfoot tr {
+            background-color: #f8f9fa;
             font-weight: bold;
         }
 
@@ -208,6 +297,11 @@
         <form id="sales-form">
             <input type="hidden" id="edit_id" value="">
             <div class="form-grid">
+                <div class="form-group">
+                    <label id="lbl-sale-date">1. 날짜</label>
+                    <input type="date" id="sale_date" required>
+                </div>
+
                 <div class="form-group">
                     <label id="lbl-item-type">2-1. 아이템 종류</label>
                     <select id="item_type" required>
@@ -280,12 +374,45 @@
         </form>
     </div>
 
+    <!-- 날짜 조회 필터 카드 -->
+    <div class="card">
+        <div class="filter-grid">
+            <div class="form-group">
+                <label id="lbl-filter-start">조회 시작일</label>
+                <input type="date" id="filter_start_date">
+            </div>
+            <div class="form-group">
+                <label id="lbl-filter-end">조회 종료일</label>
+                <input type="date" id="filter_end_date">
+            </div>
+            <button type="button" class="btn-search" onclick="loadSalesData()" id="btn-search">조회</button>
+            <button type="button" class="btn-reset" onclick="resetFilter()" id="btn-reset">초기화</button>
+        </div>
+    </div>
+
+    <!-- 합계 요약 대시보드 -->
+    <div class="summary-container">
+        <div class="summary-card selling">
+            <div class="summary-title" id="lbl-total-selling">총 판매가 합계</div>
+            <div class="summary-value" id="val-total-selling">0</div>
+        </div>
+        <div class="summary-card cost">
+            <div class="summary-title" id="lbl-total-cost">총 매입가 합계</div>
+            <div class="summary-value" id="val-total-cost">0</div>
+        </div>
+        <div class="summary-card profit">
+            <div class="summary-title" id="lbl-total-profit">총 수익 합계</div>
+            <div class="summary-value profit-text" id="val-total-profit">0</div>
+        </div>
+    </div>
+
     <!-- 판매 내역 테이블 -->
     <div class="card table-container">
         <table>
             <thead>
                 <tr>
                     <th id="th-id">순번</th>
+                    <th id="th-sale-date">날짜</th>
                     <th id="th-item-type">종류</th>
                     <th id="th-weight">무게(g)</th>
                     <th id="th-channel">유입경로</th>
@@ -302,12 +429,21 @@
             <tbody id="sales-list">
                 <!-- 동적 데이터 삽입 영역 -->
             </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="7" id="tf-label" style="text-align: right; font-weight: bold;">조회 기간 합계</td>
+                    <td id="tf-total-selling" class="profit-text" style="color:#007bff;">0</td>
+                    <td id="tf-total-cost" style="color:#dc3545;">0</td>
+                    <td id="tf-total-profit" class="profit-text">0</td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>
 
 <script>
-    // 전달받은 Supabase 정보 설정
+    // Supabase 정보 설정
     const SUPABASE_URL = "https://lrkwgebenfsdstistqdc.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_Eyr7DZSOEP0lPFAK2VlIVA_ze4gfBOS";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -319,6 +455,7 @@
         ko: {
             title: "항텅솜분 판매 수익 관리",
             langBtn: "ภาษาไทย로 변경",
+            saleDate: "1. 날짜",
             itemType: "2-1. 아이템 종류",
             weight: "2-2. 무게 (g)",
             channel: "3-1. 유입경로",
@@ -332,7 +469,16 @@
             submitBtn: "등록하기",
             updateBtn: "수정완료",
             cancelBtn: "취소",
+            filterStart: "조회 시작일",
+            filterEnd: "조회 종료일",
+            btnSearch: "조회",
+            btnReset: "초기화",
+            totalSelling: "총 판매가 합계",
+            totalCost: "총 매입가 합계",
+            totalProfit: "총 수익 합계",
+            tfLabel: "조회 기간 합계",
             thId: "순번",
+            thSaleDate: "날짜",
             thItemType: "종류",
             thWeight: "무게(g)",
             thChannel: "유입경로",
@@ -354,6 +500,7 @@
         th: {
             title: "ระบบจัดการรายได้ทองไทย",
             langBtn: "한국어로 변경",
+            saleDate: "1. วันที่",
             itemType: "2-1. ประเภทสินค้า",
             weight: "2-2. น้ำหนัก (กรัม)",
             channel: "3-1. ช่องทาง",
@@ -367,7 +514,16 @@
             submitBtn: "บันทึกข้อมูล",
             updateBtn: "บันทึกการแก้ไข",
             cancelBtn: "ยกเลิก",
+            filterStart: "วันที่เริ่มต้น",
+            filterEnd: "วันที่สิ้นสุด",
+            btnSearch: "ค้นหา",
+            btnReset: "รีเซ็ต",
+            totalSelling: "ยอดขายรวม",
+            totalCost: "ต้นทุนรวม",
+            totalProfit: "กำไรสุทธิรวม",
+            tfLabel: "รวมตามช่วงเวลาที่ค้นหา",
             thId: "ลำดับ",
+            thSaleDate: "วันที่",
             thItemType: "ประเภท",
             thWeight: "น้ำหนัก(g)",
             thChannel: "ช่องทาง",
@@ -388,12 +544,18 @@
         }
     };
 
+    function setDefaultDate() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('sale_date').value = today;
+    }
+
     function toggleLanguage() {
         currentLang = currentLang === 'ko' ? 'th' : 'ko';
         const t = translations[currentLang];
 
         document.getElementById('title-text').innerText = t.title;
         document.getElementById('lang-toggle-btn').innerText = t.langBtn;
+        document.getElementById('lbl-sale-date').innerText = t.saleDate;
         document.getElementById('lbl-item-type').innerText = t.itemType;
         document.getElementById('lbl-weight').innerText = t.weight;
         document.getElementById('lbl-channel').innerText = t.channel;
@@ -405,11 +567,22 @@
         document.getElementById('lbl-remit-bank').innerText = t.remitBank;
         document.getElementById('lbl-deposit-bank').innerText = t.depositBank;
 
+        document.getElementById('lbl-filter-start').innerText = t.filterStart;
+        document.getElementById('lbl-filter-end').innerText = t.filterEnd;
+        document.getElementById('btn-search').innerText = t.btnSearch;
+        document.getElementById('btn-reset').innerText = t.btnReset;
+
+        document.getElementById('lbl-total-selling').innerText = t.totalSelling;
+        document.getElementById('lbl-total-cost').innerText = t.totalCost;
+        document.getElementById('lbl-total-profit').innerText = t.totalProfit;
+        document.getElementById('tf-label').innerText = t.tfLabel;
+
         const editId = document.getElementById('edit_id').value;
         document.getElementById('btn-submit').innerText = editId ? t.updateBtn : t.submitBtn;
         document.getElementById('btn-cancel').innerText = t.cancelBtn;
 
         document.getElementById('th-id').innerText = t.thId;
+        document.getElementById('th-sale-date').innerText = t.thSaleDate;
         document.getElementById('th-item-type').innerText = t.thItemType;
         document.getElementById('th-weight').innerText = t.thWeight;
         document.getElementById('th-channel').innerText = t.thChannel;
@@ -422,7 +595,7 @@
         document.getElementById('th-deposit').innerText = t.thDeposit;
         document.getElementById('th-action').innerText = t.thAction;
 
-        loadSalesData();
+        renderTableAndTotals(salesDataStore);
     }
 
     function calculateProfit() {
@@ -437,6 +610,7 @@
         const editId = document.getElementById('edit_id').value;
 
         const formData = {
+            sale_date: document.getElementById('sale_date').value,
             item_type: document.getElementById('item_type').value,
             weight_g: parseFloat(document.getElementById('weight_g').value),
             channel: document.getElementById('channel').value,
@@ -449,7 +623,7 @@
         };
 
         if (editId) {
-            // 수정 모드
+            // 수정
             const { error } = await supabaseClient
                 .from('gold_sales')
                 .update(formData)
@@ -463,7 +637,7 @@
                 loadSalesData();
             }
         } else {
-            // 신규 등록 모드
+            // 등록
             const { error } = await supabaseClient
                 .from('gold_sales')
                 .insert([formData]);
@@ -473,6 +647,7 @@
             } else {
                 alert(t.saveSuccess);
                 document.getElementById('sales-form').reset();
+                setDefaultDate();
                 document.getElementById('profit').value = "0";
                 loadSalesData();
             }
@@ -485,6 +660,7 @@
 
         const t = translations[currentLang];
         document.getElementById('edit_id').value = row.id;
+        document.getElementById('sale_date').value = row.sale_date || new Date().toISOString().split('T')[0];
         document.getElementById('item_type').value = row.item_type;
         document.getElementById('weight_g').value = row.weight_g;
         document.getElementById('channel').value = row.channel;
@@ -506,6 +682,7 @@
         const t = translations[currentLang];
         document.getElementById('edit_id').value = '';
         document.getElementById('sales-form').reset();
+        setDefaultDate();
         document.getElementById('profit').value = "0";
         document.getElementById('btn-submit').innerText = t.submitBtn;
         document.getElementById('btn-cancel').style.display = 'none';
@@ -532,10 +709,21 @@
     }
 
     async function loadSalesData() {
-        const { data, error } = await supabaseClient
+        const startDate = document.getElementById('filter_start_date').value;
+        const endDate = document.getElementById('filter_end_date').value;
+
+        let query = supabaseClient
             .from('gold_sales')
-            .select('*')
-            .order('id', { ascending: false });
+            .select('*');
+
+        if (startDate) {
+            query = query.gte('sale_date', startDate);
+        }
+        if (endDate) {
+            query = query.lte('sale_date', endDate);
+        }
+
+        const { data, error } = await query.order('id', { ascending: false });
 
         if (error) {
             console.error('Data fetch error:', error);
@@ -543,22 +731,45 @@
         }
 
         salesDataStore = data || [];
+        renderTableAndTotals(salesDataStore);
+    }
+
+    function resetFilter() {
+        document.getElementById('filter_start_date').value = '';
+        document.getElementById('filter_end_date').value = '';
+        loadSalesData();
+    }
+
+    function renderTableAndTotals(data) {
         const t = translations[currentLang];
         const tbody = document.getElementById('sales-list');
         tbody.innerHTML = '';
 
-        salesDataStore.forEach(row => {
+        let totalSelling = 0;
+        let totalCost = 0;
+        let totalProfit = 0;
+
+        data.forEach(row => {
+            const selling = Number(row.selling_price) || 0;
+            const cost = Number(row.cost_price) || 0;
+            const profit = Number(row.profit) || 0;
+
+            totalSelling += selling;
+            totalCost += cost;
+            totalProfit += profit;
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${row.id}</td>
+                <td>${row.sale_date || '-'}</td>
                 <td>${row.item_type}</td>
                 <td>${row.weight_g}</td>
                 <td>${row.channel}</td>
                 <td>${row.customer_name}</td>
                 <td>${row.phone || '-'}</td>
-                <td>${Number(row.selling_price).toLocaleString()}</td>
-                <td>${Number(row.cost_price).toLocaleString()}</td>
-                <td class="profit-text">${Number(row.profit).toLocaleString()}</td>
+                <td>${selling.toLocaleString()}</td>
+                <td>${cost.toLocaleString()}</td>
+                <td class="profit-text">${profit.toLocaleString()}</td>
                 <td>${row.remit_bank || '-'}</td>
                 <td>${row.deposit_bank || '-'}</td>
                 <td>
@@ -570,9 +781,19 @@
             `;
             tbody.appendChild(tr);
         });
+
+        // 요약 대시보드 및 테이블 푸터 합계 갱신
+        document.getElementById('val-total-selling').innerText = totalSelling.toLocaleString();
+        document.getElementById('val-total-cost').innerText = totalCost.toLocaleString();
+        document.getElementById('val-total-profit').innerText = totalProfit.toLocaleString();
+
+        document.getElementById('tf-total-selling').innerText = totalSelling.toLocaleString();
+        document.getElementById('tf-total-cost').innerText = totalCost.toLocaleString();
+        document.getElementById('tf-total-profit').innerText = totalProfit.toLocaleString();
     }
 
     window.onload = () => {
+        setDefaultDate();
         loadSalesData();
     };
 </script>
