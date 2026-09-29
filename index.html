@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>태국금 판매 수익 관리 / ระบบจัดการรายได้ทองไทย</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #d4af37;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #8b6b10;
+        }
+
+        .lang-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .form-group input[readonly] {
+            background-color: #f1f1f1;
+            font-weight: bold;
+            color: #2b7a78;
+        }
+
+        .submit-btn {
+            grid-column: 1 / -1;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background-color: #218838;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--card-bg);
+            font-size: 0.88rem;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f1f3f5;
+            font-weight: bold;
+        }
+
+        .profit-text {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1 id="title-text">태국금 판매 수익 관리</h1>
+        <button class="lang-btn" onclick="toggleLanguage()" id="lang-toggle-btn">ภาษาไทย로 변경</button>
+    </div>
+
+    <!-- 입력 폼 -->
+    <div class="card">
+        <form id="sales-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label id="lbl-item-type">2-1. 아이템 종류</label>
+                    <select id="item_type" required>
+                        <option value="목걸이">목걸이 (สร้อยคอ)</option>
+                        <option value="팔찌">팔찌 (สร้อยข้อมือ)</option>
+                        <option value="반지">반지 (แหวน)</option>
+                        <option value="귀걸이">귀걸이 (ต่างหู)</option>
+                        <option value="골드바">골드바 (ทองคำแท่ง)</option>
+                        <option value="펜던트">펜던트 (จี้)</option>
+                        <option value="어린이상품">어린이상품 (สินค้าเด็ก)</option>
+                        <option value="실버제품">실버제품 (เครื่องเงิน)</option>
+                        <option value="기타">기타 (기타/etc)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-weight">2-2. 무게 (g)</label>
+                    <input type="number" id="weight_g" step="0.01" placeholder="0.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-channel">3-1. 유입경로</label>
+                    <select id="channel" required>
+                        <option value="FB">FB</option>
+                        <option value="Line">Line</option>
+                        <option value="적립">적립 (สะสมแต้ม)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-customer-name">3-2. 고객이름</label>
+                    <input type="text" id="customer_name" required>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-phone">3-3. 전화번호</label>
+                    <input type="tel" id="phone" placeholder="08X-XXX-XXXX">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-selling-price">4-1. 판매가</label>
+                    <input type="number" id="selling_price" step="0.01" placeholder="0" oninput="calculateProfit()" required>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-cost-price">4-2. 매입가</label>
+                    <input type="number" id="cost_price" step="0.01" placeholder="0" oninput="calculateProfit()" required>
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-profit">4-3. 수익 (자동계산)</label>
+                    <input type="number" id="profit" readonly value="0">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-remit-bank">5. 송금은행</label>
+                    <input type="text" id="remit_bank" placeholder="예: KBank, SCB">
+                </div>
+
+                <div class="form-group">
+                    <label id="lbl-deposit-bank">6. 입금은행</label>
+                    <input type="text" id="deposit_bank" placeholder="예: 국민은행">
+                </div>
+
+                <button type="submit" class="submit-btn" id="btn-submit">등록하기</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 판매 내역 테이블 -->
+    <div class="card table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th id="th-id">순번</th>
+                    <th id="th-item-type">종류</th>
+                    <th id="th-weight">무게(g)</th>
+                    <th id="th-channel">유입경로</th>
+                    <th id="th-customer">고객명</th>
+                    <th id="th-phone">전화번호</th>
+                    <th id="th-selling">판매가</th>
+                    <th id="th-cost">매입가</th>
+                    <th id="th-profit">수익</th>
+                    <th id="th-remit">송금은행</th>
+                    <th id="th-deposit">입금은행</th>
+                </tr>
+            </thead>
+            <tbody id="sales-list">
+                <!-- 동적 데이터 삽입 영역 -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 전달받은 Supabase 정보 설정
+    const SUPABASE_URL = "https://lrkwgebenfsdstistqdc.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_Eyr7DZSOEP0lPFAK2VlIVA_ze4gfBOS";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentLang = 'ko';
+
+    const translations = {
+        ko: {
+            title: "태국금 판매 수익 관리",
+            langBtn: "ภาษาไทย로 변경",
+            itemType: "2-1. 아이템 종류",
+            weight: "2-2. 무게 (g)",
+            channel: "3-1. 유입경로",
+            customerName: "3-2. 고객이름",
+            phone: "3-3. 전화번호",
+            sellingPrice: "4-1. 판매가",
+            costPrice: "4-2. 매입가",
+            profit: "4-3. 수익 (자동계산)",
+            remitBank: "5. 송금은행",
+            depositBank: "6. 입금은행",
+            submitBtn: "등록하기",
+            thId: "순번",
+            thItemType: "종류",
+            thWeight: "무게(g)",
+            thChannel: "유입경로",
+            thCustomer: "고객명",
+            thPhone: "전화번호",
+            thSelling: "판매가",
+            thCost: "매입가",
+            thProfit: "수익",
+            thRemit: "송금은행",
+            thDeposit: "입금은행"
+        },
+        th: {
+            title: "ระบบจัดการรายได้ทองไทย",
+            langBtn: "한국어로 변경",
+            itemType: "2-1. ประเภทสินค้า",
+            weight: "2-2. น้ำหนัก (กรัม)",
+            channel: "3-1. ช่องทาง",
+            customerName: "3-2. ชื่อลูกค้า",
+            phone: "3-3. เบอร์โทรศัพท์",
+            sellingPrice: "4-1. ราคาขาย",
+            costPrice: "4-2. ราคารับซื้อ",
+            profit: "4-3. กำไร (คำนวณอัตโนมัติ)",
+            remitBank: "5. ธนาคารโอน",
+            depositBank: "6. ธนาคารรับเงิน",
+            submitBtn: "บันทึกข้อมูล",
+            thId: "ลำดับ",
+            thItemType: "ประเภท",
+            thWeight: "น้ำหนัก(g)",
+            thChannel: "ช่องทาง",
+            thCustomer: "ชื่อลูกค้า",
+            thPhone: "เบอร์โทร",
+            thSelling: "ราคาขาย",
+            thCost: "ราคารับซื้อ",
+            thProfit: "กำไร",
+            thRemit: "ธนาคารโอน",
+            thDeposit: "ธนาคารรับเงิน"
+        }
+    };
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'ko' ? 'th' : 'ko';
+        const t = translations[currentLang];
+
+        document.getElementById('title-text').innerText = t.title;
+        document.getElementById('lang-toggle-btn').innerText = t.langBtn;
+        document.getElementById('lbl-item-type').innerText = t.itemType;
+        document.getElementById('lbl-weight').innerText = t.weight;
+        document.getElementById('lbl-channel').innerText = t.channel;
+        document.getElementById('lbl-customer-name').innerText = t.customerName;
+        document.getElementById('lbl-phone').innerText = t.phone;
+        document.getElementById('lbl-selling-price').innerText = t.sellingPrice;
+        document.getElementById('lbl-cost-price').innerText = t.costPrice;
+        document.getElementById('lbl-profit').innerText = t.profit;
+        document.getElementById('lbl-remit-bank').innerText = t.remitBank;
+        document.getElementById('lbl-deposit-bank').innerText = t.depositBank;
+        document.getElementById('btn-submit').innerText = t.submitBtn;
+
+        document.getElementById('th-id').innerText = t.thId;
+        document.getElementById('th-item-type').innerText = t.thItemType;
+        document.getElementById('th-weight').innerText = t.thWeight;
+        document.getElementById('th-channel').innerText = t.thChannel;
+        document.getElementById('th-customer').innerText = t.thCustomer;
+        document.getElementById('th-phone').innerText = t.thPhone;
+        document.getElementById('th-selling').innerText = t.thSelling;
+        document.getElementById('th-cost').innerText = t.thCost;
+        document.getElementById('th-profit').innerText = t.thProfit;
+        document.getElementById('th-remit').innerText = t.thRemit;
+        document.getElementById('th-deposit').innerText = t.thDeposit;
+    }
+
+    function calculateProfit() {
+        const selling = parseFloat(document.getElementById('selling_price').value) || 0;
+        const cost = parseFloat(document.getElementById('cost_price').value) || 0;
+        document.getElementById('profit').value = (selling - cost).toFixed(2);
+    }
+
+    document.getElementById('sales-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = {
+            item_type: document.getElementById('item_type').value,
+            weight_g: parseFloat(document.getElementById('weight_g').value),
+            channel: document.getElementById('channel').value,
+            customer_name: document.getElementById('customer_name').value,
+            phone: document.getElementById('phone').value,
+            selling_price: parseFloat(document.getElementById('selling_price').value),
+            cost_price: parseFloat(document.getElementById('cost_price').value),
+            remit_bank: document.getElementById('remit_bank').value,
+            deposit_bank: document.getElementById('deposit_bank').value
+        };
+
+        const { data, error } = await supabaseClient
+            .from('gold_sales')
+            .insert([formData]);
+
+        if (error) {
+            alert('저장 실패 / บันทึกไม่สำเร็จ: ' + error.message);
+        } else {
+            alert('성공적으로 저장되었습니다 / บันทึกข้อมูลเรียบร้อยแล้ว');
+            document.getElementById('sales-form').reset();
+            document.getElementById('profit').value = "0";
+            loadSalesData();
+        }
+    });
+
+    async function loadSalesData() {
+        const { data, error } = await supabaseClient
+            .from('gold_sales')
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) {
+            console.error('Data fetch error:', error);
+            return;
+        }
+
+        const tbody = document.getElementById('sales-list');
+        tbody.innerHTML = '';
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.id}</td>
+                <td>${row.item_type}</td>
+                <td>${row.weight_g}</td>
+                <td>${row.channel}</td>
+                <td>${row.customer_name}</td>
+                <td>${row.phone || '-'}</td>
+                <td>${Number(row.selling_price).toLocaleString()}</td>
+                <td>${Number(row.cost_price).toLocaleString()}</td>
+                <td class="profit-text">${Number(row.profit).toLocaleString()}</td>
+                <td>${row.remit_bank || '-'}</td>
+                <td>${row.deposit_bank || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    window.onload = () => {
+        loadSalesData();
+    };
+</script>
+
+</body>
+</html>
