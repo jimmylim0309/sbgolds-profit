@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>항텅솜분 태국금 판매 수익 관리 / ระบบจัดการรายได้ทองไทย</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- 엑셀 다운로드를 위한 SheetJS 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -132,7 +131,6 @@
             background-color: #5a6268;
         }
 
-        /* 날짜 조회 및 액션 필드 */
         .filter-grid {
             display: flex;
             flex-wrap: wrap;
@@ -193,7 +191,6 @@
             background-color: #218838;
         }
 
-        /* 합계 대시보드 카드리스트 */
         .summary-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -209,21 +206,10 @@
             border-left: 5px solid #6c757d;
         }
 
-        .summary-card.count {
-            border-left-color: #17a2b8;
-        }
-
-        .summary-card.selling {
-            border-left-color: #007bff;
-        }
-
-        .summary-card.cost {
-            border-left-color: #dc3545;
-        }
-
-        .summary-card.profit {
-            border-left-color: #28a745;
-        }
+        .summary-card.count { border-left-color: #17a2b8; }
+        .summary-card.selling { border-left-color: #007bff; }
+        .summary-card.cost { border-left-color: #dc3545; }
+        .summary-card.profit { border-left-color: #28a745; }
 
         .summary-title {
             font-size: 0.85rem;
@@ -288,9 +274,7 @@
             font-weight: bold;
         }
 
-        .btn-edit:hover {
-            background-color: #e0a800;
-        }
+        .btn-edit:hover { background-color: #e0a800; }
 
         .btn-delete {
             background-color: #dc3545;
@@ -303,9 +287,7 @@
             font-weight: bold;
         }
 
-        .btn-delete:hover {
-            background-color: #c82333;
-        }
+        .btn-delete:hover { background-color: #c82333; }
     </style>
 </head>
 <body>
@@ -313,7 +295,7 @@
 <div class="container">
     <div class="header">
         <h1 id="title-text">항텅솜분 태국금 판매 수익 관리</h1>
-        <button class="lang-btn" onclick="toggleLanguage()" id="lang-toggle-btn">ภาษาไทย로 변경</button>
+        <button class="lang-btn" id="lang-toggle-btn">ภาษาไทย로 변경</button>
     </div>
 
     <!-- 입력 폼 -->
@@ -367,12 +349,12 @@
 
                 <div class="form-group">
                     <label id="lbl-selling-price">4-1. 판매가</label>
-                    <input type="number" id="selling_price" step="0.01" placeholder="0" oninput="calculateProfit()" required>
+                    <input type="number" id="selling_price" step="0.01" placeholder="0" required>
                 </div>
 
                 <div class="form-group">
                     <label id="lbl-cost-price">4-2. 매입가</label>
-                    <input type="number" id="cost_price" step="0.01" placeholder="0" oninput="calculateProfit()" required>
+                    <input type="number" id="cost_price" step="0.01" placeholder="0" required>
                 </div>
 
                 <div class="form-group">
@@ -392,7 +374,7 @@
 
                 <div class="button-group">
                     <button type="submit" class="submit-btn" id="btn-submit">등록하기</button>
-                    <button type="button" class="cancel-btn" id="btn-cancel" onclick="cancelEdit()">취소</button>
+                    <button type="button" class="cancel-btn" id="btn-cancel">취소</button>
                 </div>
             </div>
         </form>
@@ -409,9 +391,9 @@
                 <label id="lbl-filter-end">조회 종료일</label>
                 <input type="date" id="filter_end_date">
             </div>
-            <button type="button" class="btn-search" onclick="loadSalesData()" id="btn-search">조회</button>
-            <button type="button" class="btn-reset" onclick="resetFilter()" id="btn-reset">초기화</button>
-            <button type="button" class="btn-excel" onclick="exportToExcel()" id="btn-excel">📊 엑셀 다운로드</button>
+            <button type="button" class="btn-search" id="btn-search">조회</button>
+            <button type="button" class="btn-reset" id="btn-reset">초기화</button>
+            <button type="button" class="btn-excel" id="btn-excel">📊 엑셀 다운로드</button>
         </div>
     </div>
 
@@ -471,11 +453,34 @@
     </div>
 </div>
 
-<script>
-    // Supabase 정보 설정
-    const SUPABASE_URL = "https://lrkwgebenfsdstistqdc.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_Eyr7DZSOEP0lPFAK2VlIVA_ze4gfBOS";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<!-- Firebase SDK v10 (Modular) 스크립트 모듈 -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        getDocs, 
+        addDoc, 
+        doc, 
+        updateDoc, 
+        deleteDoc, 
+        query, 
+        where, 
+        serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Firebase 설정 정보 (파이어베이스 콘솔 -> 프로젝트 설정에서 확인한 정보로 수정)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "sbgold-profit.firebaseapp.com",
+        projectId: "sbgold-profit",
+        storageBucket: "sbgold-profit.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     let currentLang = 'ko';
     let salesDataStore = [];
@@ -586,6 +591,15 @@
         document.getElementById('sale_date').value = today;
     }
 
+    function calculateProfit() {
+        const selling = parseFloat(document.getElementById('selling_price').value) || 0;
+        const cost = parseFloat(document.getElementById('cost_price').value) || 0;
+        document.getElementById('profit').value = (selling - cost).toFixed(2);
+    }
+
+    document.getElementById('selling_price').addEventListener('input', calculateProfit);
+    document.getElementById('cost_price').addEventListener('input', calculateProfit);
+
     function toggleLanguage() {
         currentLang = currentLang === 'ko' ? 'th' : 'ko';
         const t = translations[currentLang];
@@ -637,62 +651,90 @@
         renderTableAndTotals(salesDataStore);
     }
 
-    function calculateProfit() {
-        const selling = parseFloat(document.getElementById('selling_price').value) || 0;
-        const cost = parseFloat(document.getElementById('cost_price').value) || 0;
-        document.getElementById('profit').value = (selling - cost).toFixed(2);
+    // Firestore 데이터 조회
+    async function loadSalesData() {
+        const startDate = document.getElementById('filter_start_date').value;
+        const endDate = document.getElementById('filter_end_date').value;
+
+        const salesRef = collection(db, 'gold_sales');
+        let queryConstraints = [];
+
+        if (startDate) {
+            queryConstraints.push(where('sale_date', '>=', startDate));
+        }
+        if (endDate) {
+            queryConstraints.push(where('sale_date', '<=', endDate));
+        }
+
+        try {
+            const q = query(salesRef, ...queryConstraints);
+            const querySnapshot = await getDocs(q);
+
+            salesDataStore = [];
+            querySnapshot.forEach((docSnap) => {
+                salesDataStore.push({
+                    id: docSnap.id,
+                    ...docSnap.data()
+                });
+            });
+
+            // 날짜 기준 내림차순 정렬
+            salesDataStore.sort((a, b) => (b.sale_date || '').localeCompare(a.sale_date || ''));
+
+            renderTableAndTotals(salesDataStore);
+        } catch (error) {
+            console.error('Data fetch error:', error);
+            alert('데이터를 불러오는 중 오류가 발생했습니다: ' + error.message);
+        }
     }
 
+    // Firestore 등록 및 수정
     document.getElementById('sales-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const t = translations[currentLang];
         const editId = document.getElementById('edit_id').value;
 
+        const sellingPrice = parseFloat(document.getElementById('selling_price').value) || 0;
+        const costPrice = parseFloat(document.getElementById('cost_price').value) || 0;
+
         const formData = {
             sale_date: document.getElementById('sale_date').value,
             item_type: document.getElementById('item_type').value,
-            weight_g: parseFloat(document.getElementById('weight_g').value),
+            weight_g: parseFloat(document.getElementById('weight_g').value) || 0,
             channel: document.getElementById('channel').value,
             customer_name: document.getElementById('customer_name').value,
             phone: document.getElementById('phone').value,
-            selling_price: parseFloat(document.getElementById('selling_price').value),
-            cost_price: parseFloat(document.getElementById('cost_price').value),
+            selling_price: sellingPrice,
+            cost_price: costPrice,
+            profit: sellingPrice - costPrice,
             remit_bank: document.getElementById('remit_bank').value,
             deposit_bank: document.getElementById('deposit_bank').value
         };
 
-        if (editId) {
-            // 수정
-            const { error } = await supabaseClient
-                .from('gold_sales')
-                .update(formData)
-                .eq('id', editId);
-
-            if (error) {
-                alert(error.message);
-            } else {
+        try {
+            if (editId) {
+                // 수정 처리
+                const docRef = doc(db, 'gold_sales', editId);
+                await updateDoc(docRef, formData);
                 alert(t.updateSuccess);
                 cancelEdit();
-                loadSalesData();
-            }
-        } else {
-            // 등록
-            const { error } = await supabaseClient
-                .from('gold_sales')
-                .insert([formData]);
-
-            if (error) {
-                alert(error.message);
             } else {
+                // 신규 등록 처리
+                formData.created_at = serverTimestamp();
+                await addDoc(collection(db, 'gold_sales'), formData);
                 alert(t.saveSuccess);
                 document.getElementById('sales-form').reset();
                 setDefaultDate();
                 document.getElementById('profit').value = "0";
-                loadSalesData();
             }
+            loadSalesData();
+        } catch (error) {
+            console.error('Error saving document:', error);
+            alert('저장 중 오류가 발생했습니다: ' + error.message);
         }
     });
 
+    // 행 수정 선택
     function editRow(id) {
         const row = salesDataStore.find(item => item.id === id);
         if (!row) return;
@@ -727,50 +769,22 @@
         document.getElementById('btn-cancel').style.display = 'none';
     }
 
+    // 행 삭제
     async function deleteRow(id) {
         const t = translations[currentLang];
         if (!confirm(t.confirmDelete)) return;
 
-        const { error } = await supabaseClient
-            .from('gold_sales')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            alert(error.message);
-        } else {
+        try {
+            await deleteDoc(doc(db, 'gold_sales', id));
             alert(t.deleteSuccess);
-            if (document.getElementById('edit_id').value == id) {
+            if (document.getElementById('edit_id').value === id) {
                 cancelEdit();
             }
             loadSalesData();
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            alert('삭제 중 오류가 발생했습니다: ' + error.message);
         }
-    }
-
-    async function loadSalesData() {
-        const startDate = document.getElementById('filter_start_date').value;
-        const endDate = document.getElementById('filter_end_date').value;
-
-        let query = supabaseClient
-            .from('gold_sales')
-            .select('*');
-
-        if (startDate) {
-            query = query.gte('sale_date', startDate);
-        }
-        if (endDate) {
-            query = query.lte('sale_date', endDate);
-        }
-
-        const { data, error } = await query.order('id', { ascending: false });
-
-        if (error) {
-            console.error('Data fetch error:', error);
-            return;
-        }
-
-        salesDataStore = data || [];
-        renderTableAndTotals(salesDataStore);
     }
 
     function resetFilter() {
@@ -788,10 +802,10 @@
         let totalCost = 0;
         let totalProfit = 0;
 
-        data.forEach(row => {
+        data.forEach((row, index) => {
             const selling = Number(row.selling_price) || 0;
             const cost = Number(row.cost_price) || 0;
-            const profit = Number(row.profit) || 0;
+            const profit = Number(row.profit) || (selling - cost);
 
             totalSelling += selling;
             totalCost += cost;
@@ -799,7 +813,7 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${row.id}</td>
+                <td>${index + 1}</td>
                 <td>${row.sale_date || '-'}</td>
                 <td>${row.item_type}</td>
                 <td>${row.weight_g}</td>
@@ -813,15 +827,23 @@
                 <td>${row.deposit_bank || '-'}</td>
                 <td>
                     <div class="action-btn-group">
-                        <button class="btn-edit" onclick="editRow(${row.id})">${t.btnEdit}</button>
-                        <button class="btn-delete" onclick="deleteRow(${row.id})">${t.btnDelete}</button>
+                        <button class="btn-edit-action btn-edit" data-id="${row.id}">${t.btnEdit}</button>
+                        <button class="btn-delete-action btn-delete" data-id="${row.id}">${t.btnDelete}</button>
                     </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
 
-        // 요약 대시보드 및 테이블 푸터 합계 갱신
+        // 이벤트 리스너 바인딩
+        document.querySelectorAll('.btn-edit-action').forEach(btn => {
+            btn.addEventListener('click', (e) => editRow(e.target.dataset.id));
+        });
+        document.querySelectorAll('.btn-delete-action').forEach(btn => {
+            btn.addEventListener('click', (e) => deleteRow(e.target.dataset.id));
+        });
+
+        // 대시보드 요약 정보 업데이트
         document.getElementById('val-total-count').innerText = `${data.length.toLocaleString()}${t.countUnit}`;
         document.getElementById('val-total-selling').innerText = totalSelling.toLocaleString();
         document.getElementById('val-total-cost').innerText = totalCost.toLocaleString();
@@ -832,7 +854,7 @@
         document.getElementById('tf-total-profit').innerText = totalProfit.toLocaleString();
     }
 
-    // 엑셀 다운로드 기능
+    // 엑셀 다운로드
     function exportToExcel() {
         const t = translations[currentLang];
         if (!salesDataStore || salesDataStore.length === 0) {
@@ -840,9 +862,8 @@
             return;
         }
 
-        // 엑셀에 들어갈 데이터 정리 (현재 검색된 목록 기준)
-        const excelRows = salesDataStore.map(row => ({
-            [t.thId]: row.id,
+        const excelRows = salesDataStore.map((row, idx) => ({
+            [t.thId]: idx + 1,
             [t.thSaleDate]: row.sale_date || '',
             [t.thItemType]: row.item_type || '',
             [t.thWeight]: row.weight_g || 0,
@@ -860,12 +881,18 @@
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "SalesData");
 
-        // 파일명 생성 (오늘 날짜 포함)
         const todayStr = new Date().toISOString().split('T')[0];
         const fileName = `Gold_Sales_${todayStr}.xlsx`;
 
         XLSX.writeFile(workbook, fileName);
     }
+
+    // 버튼 이벤트 바인딩
+    document.getElementById('lang-toggle-btn').addEventListener('click', toggleLanguage);
+    document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
+    document.getElementById('btn-search').addEventListener('click', loadSalesData);
+    document.getElementById('btn-reset').addEventListener('click', resetFilter);
+    document.getElementById('btn-excel').addEventListener('click', exportToExcel);
 
     window.onload = () => {
         setDefaultDate();
