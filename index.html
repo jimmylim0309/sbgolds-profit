@@ -9,6 +9,7 @@
     <style>
         :root {
             --primary-color: #d4af37;
+            --primary-dark: #8b6b10;
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
             --text-color: #333333;
@@ -21,6 +22,96 @@
             color: var(--text-color);
             margin: 0;
             padding: 20px;
+        }
+
+        /* 로그인 / 비밀번호 잠금 모달 스타일 */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 35px 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            border-top: 5px solid var(--primary-color);
+        }
+
+        .auth-card h2 {
+            margin-top: 0;
+            color: var(--primary-dark);
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .auth-card p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .auth-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .auth-input-group input {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .auth-input-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(212, 175, 55, 0.4);
+        }
+
+        .auth-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .auth-error-msg {
+            color: #dc3545;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+            font-weight: bold;
+        }
+
+        .main-content {
+            display: none; /* 관리자 인증 완료 전까지 숨김 처리 */
         }
 
         .container {
@@ -40,7 +131,12 @@
         .header h1 {
             margin: 0;
             font-size: 1.5rem;
-            color: #8b6b10;
+            color: var(--primary-dark);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
         }
 
         .lang-btn {
@@ -51,6 +147,20 @@
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+        }
+
+        .logout-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .logout-btn:hover {
+            background-color: #5a6268;
         }
 
         .card {
@@ -292,164 +402,185 @@
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1 id="title-text">항텅솜분 태국금 판매 수익 관리</h1>
-        <button class="lang-btn" id="lang-toggle-btn">ภาษาไทย로 변경</button>
-    </div>
-
-    <!-- 입력 폼 -->
-    <div class="card">
-        <form id="sales-form">
-            <input type="hidden" id="edit_id" value="">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label id="lbl-sale-date">1. 날짜</label>
-                    <input type="date" id="sale_date" required>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-item-type">2-1. 아이템 종류</label>
-                    <select id="item_type" required>
-                        <option value="목걸이">목걸이 (สร้อยคอ)</option>
-                        <option value="팔찌">팔찌 (สร้อยข้อมือ)</option>
-                        <option value="반지">반지 (แหวน)</option>
-                        <option value="귀걸이">귀걸이 (ต่างหู)</option>
-                        <option value="골드바">골드바 (ทองคำแท่ง)</option>
-                        <option value="펜던트">펜던特 (จี้)</option>
-                        <option value="어린이상품">어린이상품 (สินค้าเด็ก)</option>
-                        <option value="실버제품">실버제품 (เครื่องเงิน)</option>
-                        <option value="기타">기타 (기타/etc)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-weight">2-2. 무게 (g)</label>
-                    <input type="number" id="weight_g" step="0.01" placeholder="0.00" required>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-channel">3-1. 유입경로</label>
-                    <select id="channel" required>
-                        <option value="FB">FB</option>
-                        <option value="Line">Line</option>
-                        <option value="적립">적립 (สะสมแต้ม)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-customer-name">3-2. 고객이름</label>
-                    <input type="text" id="customer_name" required>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-phone">3-3. 전화번호</label>
-                    <input type="tel" id="phone" placeholder="08X-XXX-XXXX">
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-selling-price">4-1. 판매가</label>
-                    <input type="number" id="selling_price" step="0.01" placeholder="0" required>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-cost-price">4-2. 매입가</label>
-                    <input type="number" id="cost_price" step="0.01" placeholder="0" required>
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-profit">4-3. 수익 (자동계산)</label>
-                    <input type="number" id="profit" readonly value="0">
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-remit-bank">5. 송금은행</label>
-                    <input type="text" id="remit_bank" placeholder="예: KBank, SCB">
-                </div>
-
-                <div class="form-group">
-                    <label id="lbl-deposit-bank">6. 입금은행</label>
-                    <input type="text" id="deposit_bank" placeholder="예: 국민은행">
-                </div>
-
-                <div class="button-group">
-                    <button type="submit" class="submit-btn" id="btn-submit">등록하기</button>
-                    <button type="button" class="cancel-btn" id="btn-cancel">취소</button>
-                </div>
+<!-- 관리자 비밀번호 입력 모달 오버레이 -->
+<div id="auth-overlay" class="auth-overlay">
+    <div class="auth-card">
+        <h2 id="auth-title">🔒 관리자 인증</h2>
+        <p id="auth-desc">시스템 접근을 위해 비밀번호를 입력해주세요.</p>
+        <form id="auth-form">
+            <div class="auth-input-group">
+                <input type="password" id="admin-password" placeholder="비밀번호 입력" required autofocus>
+                <button type="submit" class="auth-btn" id="auth-btn">확인</button>
             </div>
         </form>
+        <div id="auth-error-msg" class="auth-error-msg">비밀번호가 올바르지 않습니다.</div>
     </div>
+</div>
 
-    <!-- 날짜 조회 필터 및 엑셀 다운로드 카드 -->
-    <div class="card">
-        <div class="filter-grid">
-            <div class="form-group">
-                <label id="lbl-filter-start">조회 시작일</label>
-                <input type="date" id="filter_start_date">
+<!-- 본문 콘텐츠 (인증 후 노출) -->
+<div id="main-content" class="main-content">
+    <div class="container">
+        <div class="header">
+            <h1 id="title-text">항텅솜분 태국금 판매 수익 관리</h1>
+            <div class="header-actions">
+                <button class="lang-btn" id="lang-toggle-btn">ภาษาไทย로 변경</button>
+                <button class="logout-btn" id="logout-btn">로그아웃</button>
             </div>
-            <div class="form-group">
-                <label id="lbl-filter-end">조회 종료일</label>
-                <input type="date" id="filter_end_date">
+        </div>
+
+        <!-- 입력 폼 -->
+        <div class="card">
+            <form id="sales-form">
+                <input type="hidden" id="edit_id" value="">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label id="lbl-sale-date">1. 날짜</label>
+                        <input type="date" id="sale_date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-item-type">2-1. 아이템 종류</label>
+                        <select id="item_type" required>
+                            <option value="목걸이">목걸이 (สร้อยคอ)</option>
+                            <option value="팔찌">팔찌 (สร้อยข้อมือ)</option>
+                            <option value="반지">반지 (แหวน)</option>
+                            <option value="귀걸이">귀걸이 (ต่างหู)</option>
+                            <option value="골드바">골드바 (ทองคำแท่ง)</option>
+                            <option value="펜던트">펜던特 (จี้)</option>
+                            <option value="어린이상품">어린이상품 (สินค้าเด็ก)</option>
+                            <option value="실버제품">실버제품 (เครื่องเงิน)</option>
+                            <option value="기타">기타 (기타/etc)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-weight">2-2. 무게 (g)</label>
+                        <input type="number" id="weight_g" step="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-channel">3-1. 유입경로</label>
+                        <select id="channel" required>
+                            <option value="FB">FB</option>
+                            <option value="Line">Line</option>
+                            <option value="적립">적립 (สะสมแต้ม)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-customer-name">3-2. 고객이름</label>
+                        <input type="text" id="customer_name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-phone">3-3. 전화번호</label>
+                        <input type="tel" id="phone" placeholder="08X-XXX-XXXX">
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-selling-price">4-1. 판매가</label>
+                        <input type="number" id="selling_price" step="0.01" placeholder="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-cost-price">4-2. 매입가</label>
+                        <input type="number" id="cost_price" step="0.01" placeholder="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-profit">4-3. 수익 (자동계산)</label>
+                        <input type="number" id="profit" readonly value="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-remit-bank">5. 송금은행</label>
+                        <input type="text" id="remit_bank" placeholder="예: KBank, SCB">
+                    </div>
+
+                    <div class="form-group">
+                        <label id="lbl-deposit-bank">6. 입금은행</label>
+                        <input type="text" id="deposit_bank" placeholder="예: 국민은행">
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="submit-btn" id="btn-submit">등록하기</button>
+                        <button type="button" class="cancel-btn" id="btn-cancel">취소</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 날짜 조회 필터 및 엑셀 다운로드 카드 -->
+        <div class="card">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label id="lbl-filter-start">조회 시작일</label>
+                    <input type="date" id="filter_start_date">
+                </div>
+                <div class="form-group">
+                    <label id="lbl-filter-end">조회 종료일</label>
+                    <input type="date" id="filter_end_date">
+                </div>
+                <button type="button" class="btn-search" id="btn-search">조회</button>
+                <button type="button" class="btn-reset" id="btn-reset">초기화</button>
+                <button type="button" class="btn-excel" id="btn-excel">📊 엑셀 다운로드</button>
             </div>
-            <button type="button" class="btn-search" id="btn-search">조회</button>
-            <button type="button" class="btn-reset" id="btn-reset">초기화</button>
-            <button type="button" class="btn-excel" id="btn-excel">📊 엑셀 다운로드</button>
         </div>
-    </div>
 
-    <!-- 합계 요약 대시보드 -->
-    <div class="summary-container">
-        <div class="summary-card count">
-            <div class="summary-title" id="lbl-total-count">총 판매 건수</div>
-            <div class="summary-value" id="val-total-count">0건</div>
+        <!-- 합계 요약 대시보드 -->
+        <div class="summary-container">
+            <div class="summary-card count">
+                <div class="summary-title" id="lbl-total-count">총 판매 건수</div>
+                <div class="summary-value" id="val-total-count">0건</div>
+            </div>
+            <div class="summary-card selling">
+                <div class="summary-title" id="lbl-total-selling">총 판매가 합계</div>
+                <div class="summary-value" id="val-total-selling">0</div>
+            </div>
+            <div class="summary-card cost">
+                <div class="summary-title" id="lbl-total-cost">총 매입가 합계</div>
+                <div class="summary-value" id="val-total-cost">0</div>
+            </div>
+            <div class="summary-card profit">
+                <div class="summary-title" id="lbl-total-profit">총 수익 합계</div>
+                <div class="summary-value profit-text" id="val-total-profit">0</div>
+            </div>
         </div>
-        <div class="summary-card selling">
-            <div class="summary-title" id="lbl-total-selling">총 판매가 합계</div>
-            <div class="summary-value" id="val-total-selling">0</div>
-        </div>
-        <div class="summary-card cost">
-            <div class="summary-title" id="lbl-total-cost">총 매입가 합계</div>
-            <div class="summary-value" id="val-total-cost">0</div>
-        </div>
-        <div class="summary-card profit">
-            <div class="summary-title" id="lbl-total-profit">총 수익 합계</div>
-            <div class="summary-value profit-text" id="val-total-profit">0</div>
-        </div>
-    </div>
 
-    <!-- 판매 내역 테이블 -->
-    <div class="card table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th id="th-id">순번</th>
-                    <th id="th-sale-date">날짜</th>
-                    <th id="th-item-type">종류</th>
-                    <th id="th-weight">무게(g)</th>
-                    <th id="th-channel">유입경로</th>
-                    <th id="th-customer">고객명</th>
-                    <th id="th-phone">전화번호</th>
-                    <th id="th-selling">판매가</th>
-                    <th id="th-cost">매입가</th>
-                    <th id="th-profit">수익</th>
-                    <th id="th-remit">송금은행</th>
-                    <th id="th-deposit">입금은행</th>
-                    <th id="th-action">관리</th>
-                </tr>
-            </thead>
-            <tbody id="sales-list">
-                <!-- 동적 데이터 삽입 영역 -->
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="7" id="tf-label" style="text-align: right; font-weight: bold;">조회 기간 합계</td>
-                    <td id="tf-total-selling" class="profit-text" style="color:#007bff;">0</td>
-                    <td id="tf-total-cost" style="color:#dc3545;">0</td>
-                    <td id="tf-total-profit" class="profit-text">0</td>
-                    <td colspan="3"></td>
-                </tr>
-            </tfoot>
-        </table>
+        <!-- 판매 내역 테이블 -->
+        <div class="card table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th id="th-id">순번</th>
+                        <th id="th-sale-date">날짜</th>
+                        <th id="th-item-type">종류</th>
+                        <th id="th-weight">무게(g)</th>
+                        <th id="th-channel">유입경로</th>
+                        <th id="th-customer">고객명</th>
+                        <th id="th-phone">전화번호</th>
+                        <th id="th-selling">판매가</th>
+                        <th id="th-cost">매입가</th>
+                        <th id="th-profit">수익</th>
+                        <th id="th-remit">송금은행</th>
+                        <th id="th-deposit">입금은행</th>
+                        <th id="th-action">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="sales-list">
+                    <!-- 동적 데이터 삽입 영역 -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="7" id="tf-label" style="text-align: right; font-weight: bold;">조회 기간 합계</td>
+                        <td id="tf-total-selling" class="profit-text" style="color:#007bff;">0</td>
+                        <td id="tf-total-cost" style="color:#dc3545;">0</td>
+                        <td id="tf-total-profit" class="profit-text">0</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -484,6 +615,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // 관리자 비밀번호
+    const ADMIN_PASSWORD = "jimmy0309!";
+
     let currentLang = 'ko';
     let salesDataStore = [];
 
@@ -491,6 +625,12 @@
         ko: {
             title: "항텅솜분 판매 수익 관리",
             langBtn: "ภาษาไทย로 변경",
+            logoutBtn: "로그아웃",
+            authTitle: "🔒 관리자 인증",
+            authDesc: "시스템 접근을 위해 비밀번호를 입력해주세요.",
+            authBtn: "확인",
+            authErr: "비밀번호가 올바르지 않습니다.",
+            pwdPlaceholder: "비밀번호 입력",
             saleDate: "1. 날짜",
             itemType: "2-1. 아이템 종류",
             weight: "2-2. 무게 (g)",
@@ -540,6 +680,12 @@
         th: {
             title: "ระบบจัดการรายได้ทองไทย",
             langBtn: "한국어로 변경",
+            logoutBtn: "ออกจากระบบ",
+            authTitle: "🔒 ยืนยันตัวตนผู้ดูแลระบบ",
+            authDesc: "กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ",
+            authBtn: "ตกลง",
+            authErr: "รหัสผ่านไม่ถูกต้อง",
+            pwdPlaceholder: "กรอกรหัสผ่าน",
             saleDate: "1. วันที่",
             itemType: "2-1. ประเภทสินค้า",
             weight: "2-2. น้ำหนัก (กรัม)",
@@ -588,6 +734,50 @@
         }
     };
 
+    // 비밀번호 인증 확인 함수
+    function verifyPassword(e) {
+        if (e) e.preventDefault();
+        const inputPwd = document.getElementById('admin-password').value;
+        const errorMsg = document.getElementById('auth-error-msg');
+
+        if (inputPwd === ADMIN_PASSWORD) {
+            sessionStorage.setItem('isAdminLoggedIn', 'true');
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            errorMsg.style.display = 'none';
+            setDefaultDate();
+            loadSalesData();
+        } else {
+            errorMsg.innerText = translations[currentLang].authErr;
+            errorMsg.style.display = 'block';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-password').focus();
+        }
+    }
+
+    // 로그아웃 처리
+    function logout() {
+        sessionStorage.removeItem('isAdminLoggedIn');
+        document.getElementById('admin-password').value = '';
+        document.getElementById('auth-error-msg').style.display = 'none';
+        document.getElementById('auth-overlay').style.display = 'flex';
+        document.getElementById('main-content').style.display = 'none';
+    }
+
+    // 세션 체크 (페이지 로드 시)
+    function checkAuthSession() {
+        const isLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
+        if (isLoggedIn === 'true') {
+            document.getElementById('auth-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            setDefaultDate();
+            loadSalesData();
+        } else {
+            document.getElementById('auth-overlay').style.display = 'flex';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    }
+
     function setDefaultDate() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('sale_date').value = today;
@@ -606,8 +796,16 @@
         currentLang = currentLang === 'ko' ? 'th' : 'ko';
         const t = translations[currentLang];
 
+        // 로그인 모달 다국어
+        document.getElementById('auth-title').innerText = t.authTitle;
+        document.getElementById('auth-desc').innerText = t.authDesc;
+        document.getElementById('auth-btn').innerText = t.authBtn;
+        document.getElementById('admin-password').placeholder = t.pwdPlaceholder;
+
+        // 메인 화면 다국어
         document.getElementById('title-text').innerText = t.title;
         document.getElementById('lang-toggle-btn').innerText = t.langBtn;
+        document.getElementById('logout-btn').innerText = t.logoutBtn;
         document.getElementById('lbl-sale-date').innerText = t.saleDate;
         document.getElementById('lbl-item-type').innerText = t.itemType;
         document.getElementById('lbl-weight').innerText = t.weight;
@@ -889,7 +1087,9 @@
         XLSX.writeFile(workbook, fileName);
     }
 
-    // 버튼 이벤트 바인딩
+    // 이벤트 리스너 설정
+    document.getElementById('auth-form').addEventListener('submit', verifyPassword);
+    document.getElementById('logout-btn').addEventListener('click', logout);
     document.getElementById('lang-toggle-btn').addEventListener('click', toggleLanguage);
     document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
     document.getElementById('btn-search').addEventListener('click', loadSalesData);
@@ -897,8 +1097,7 @@
     document.getElementById('btn-excel').addEventListener('click', exportToExcel);
 
     window.onload = () => {
-        setDefaultDate();
-        loadSalesData();
+        checkAuthSession();
     };
 </script>
 
