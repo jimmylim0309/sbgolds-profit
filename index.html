@@ -402,18 +402,25 @@
 </head>
 <body>
 
-<!-- 관리자 비밀번호 입력 모달 오버레이 -->
+<!-- 관리자 로그인 모달 오버레이 -->
 <div id="auth-overlay" class="auth-overlay">
     <div class="auth-card">
-        <h2 id="auth-title">🔒 관리자 인증</h2>
-        <p id="auth-desc">시스템 접근을 위해 비밀번호를 입력해주세요.</p>
+        <h2 id="auth-title">🔒 관리자 로그인</h2>
+        <p id="auth-desc">시스템 접근을 위해 이메일과 비밀번호를 입력해주세요.</p>
         <form id="auth-form">
             <div class="auth-input-group">
-                <input type="password" id="admin-password" placeholder="비밀번호 입력" required autofocus>
-                <button type="submit" class="auth-btn" id="auth-btn">확인</button>
+                <!-- 등록된 이메일 빠르게 선택할 수 있는 Select 및 Direct 입력 지원 -->
+                <select id="admin-email-select" style="padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center; font-size: 0.95rem; margin-bottom: 2px;">
+                    <option value="">-- 이메일 선택 (또는 직접 입력) --</option>
+                    <option value="jimmylim0309@gmail.com">jimmylim0309@gmail.com</option>
+                    <option value="pan.panjawee@gmail.com">pan.panjawee@gmail.com</option>
+                </select>
+                <input type="email" id="admin-email" placeholder="이메일 입력 (ex: name@gmail.com)" required autofocus>
+                <input type="password" id="admin-password" placeholder="비밀번호 입력" required>
+                <button type="submit" class="auth-btn" id="auth-btn">로그인</button>
             </div>
         </form>
-        <div id="auth-error-msg" class="auth-error-msg">비밀번호가 올바르지 않습니다.</div>
+        <div id="auth-error-msg" class="auth-error-msg">로그인 정보가 올바르지 않습니다.</div>
     </div>
 </div>
 
@@ -446,7 +453,7 @@
                             <option value="반지">반지 (แหวน)</option>
                             <option value="귀걸이">귀걸이 (ต่างหู)</option>
                             <option value="골드바">골드바 (ทองคำแท่ง)</option>
-                            <option value="펜던트">펜던特 (จี้)</option>
+                            <option value="펜던트">펜던트 (จี้)</option>
                             <option value="어린이상품">어린이상품 (สินค้าเด็ก)</option>
                             <option value="실버제품">실버제품 (เครื่องเงิน)</option>
                             <option value="기타">기타 (기타/etc)</option>
@@ -588,6 +595,12 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
+        getAuth, 
+        signInWithEmailAndPassword, 
+        signOut, 
+        onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
         getFirestore, 
         collection, 
         getDocs, 
@@ -613,23 +626,31 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
-
-    // 관리자 비밀번호
-    const ADMIN_PASSWORD = "jimmy0309!";
 
     let currentLang = 'ko';
     let salesDataStore = [];
+
+    // 이메일 셀렉트 선택 시 input 필드 자동 입력
+    document.getElementById('admin-email-select').addEventListener('change', (e) => {
+        if (e.target.value) {
+            document.getElementById('admin-email').value = e.target.value;
+            document.getElementById('admin-password').focus();
+        }
+    });
 
     const translations = {
         ko: {
             title: "항텅솜분 판매 수익 관리",
             langBtn: "ภาษาไทย로 변경",
             logoutBtn: "로그아웃",
-            authTitle: "🔒 관리자 인증",
-            authDesc: "시스템 접근을 위해 비밀번호를 입력해주세요.",
-            authBtn: "확인",
-            authErr: "비밀번호가 올바르지 않습니다.",
+            authTitle: "🔒 관리자 로그인",
+            authDesc: "시스템 접근을 위해 이메일과 비밀번호를 입력해주세요.",
+            authBtn: "로그인",
+            authErr: "이메일 또는 비밀번호가 올바르지 않습니다.",
+            emailSelectDefault: "-- 이메일 선택 (또는 직접 입력) --",
+            emailPlaceholder: "이메일 입력",
             pwdPlaceholder: "비밀번호 입력",
             saleDate: "1. 날짜",
             itemType: "2-1. 아이템 종류",
@@ -681,10 +702,12 @@
             title: "ระบบจัดการรายได้ทองไทย",
             langBtn: "한국어로 변경",
             logoutBtn: "ออกจากระบบ",
-            authTitle: "🔒 ยืนยันตัวตนผู้ดูแลระบบ",
-            authDesc: "กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ",
-            authBtn: "ตกลง",
-            authErr: "รหัสผ่านไม่ถูกต้อง",
+            authTitle: "🔒 เข้าสู่ระบบผู้ดูแลระบบ",
+            authDesc: "กรุณากรอกอีเมลและรหัสผ่านเพื่อเข้าสู่ระบบ",
+            authBtn: "เข้าสู่ระบบ",
+            authErr: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+            emailSelectDefault: "-- เลือกอีเมล (หรือกรอกเอง) --",
+            emailPlaceholder: "กรอกอีเมล",
             pwdPlaceholder: "กรอกรหัสผ่าน",
             saleDate: "1. วันที่",
             itemType: "2-1. ประเภทสินค้า",
@@ -734,40 +757,50 @@
         }
     };
 
-    // 비밀번호 인증 확인 함수
-    function verifyPassword(e) {
+    // Firebase Auth 로그인 처리
+    async function handleLogin(e) {
         if (e) e.preventDefault();
-        const inputPwd = document.getElementById('admin-password').value;
+        const email = document.getElementById('admin-email').value.trim();
+        const password = document.getElementById('admin-password').value;
         const errorMsg = document.getElementById('auth-error-msg');
 
-        if (inputPwd === ADMIN_PASSWORD) {
-            sessionStorage.setItem('isAdminLoggedIn', 'true');
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
             errorMsg.style.display = 'none';
-            setDefaultDate();
-            loadSalesData();
-        } else {
-            errorMsg.innerText = translations[currentLang].authErr;
+        } catch (error) {
+            console.error("Login failed:", error.code, error.message);
+            
+            // Firebase 인증 에러 코드별 세부 메시지 안내
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                errorMsg.innerText = currentLang === 'ko' 
+                    ? "이메일 또는 비밀번호가 올바르지 않습니다. (비밀번호 확인 필요)" 
+                    : "อีเมลหรือรหัสผ่านไม่ถูกต้อง (กรุณาตรวจสอบรหัสผ่าน)";
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMsg.innerText = currentLang === 'ko' 
+                    ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요." 
+                    : "พยายามเข้าสู่ระบบมากเกินไป กรุณาลองใหม่ในภายหลัง";
+            } else {
+                errorMsg.innerText = translations[currentLang].authErr;
+            }
             errorMsg.style.display = 'block';
-            document.getElementById('admin-password').value = '';
-            document.getElementById('admin-password').focus();
         }
     }
 
-    // 로그아웃 처리
-    function logout() {
-        sessionStorage.removeItem('isAdminLoggedIn');
-        document.getElementById('admin-password').value = '';
-        document.getElementById('auth-error-msg').style.display = 'none';
-        document.getElementById('auth-overlay').style.display = 'flex';
-        document.getElementById('main-content').style.display = 'none';
+    // Firebase Auth 로그아웃 처리
+    async function handleLogout() {
+        try {
+            await signOut(auth);
+            document.getElementById('admin-email').value = '';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-email-select').value = '';
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
     }
 
-    // 세션 체크 (페이지 로드 시)
-    function checkAuthSession() {
-        const isLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
-        if (isLoggedIn === 'true') {
+    // 인증 상태 감지 (세션 자동 유지)
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
             document.getElementById('auth-overlay').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
             setDefaultDate();
@@ -776,7 +809,7 @@
             document.getElementById('auth-overlay').style.display = 'flex';
             document.getElementById('main-content').style.display = 'none';
         }
-    }
+    });
 
     function setDefaultDate() {
         const today = new Date().toISOString().split('T')[0];
@@ -796,13 +829,11 @@
         currentLang = currentLang === 'ko' ? 'th' : 'ko';
         const t = translations[currentLang];
 
-        // 로그인 모달 다국어
         document.getElementById('auth-title').innerText = t.authTitle;
         document.getElementById('auth-desc').innerText = t.authDesc;
         document.getElementById('auth-btn').innerText = t.authBtn;
         document.getElementById('admin-password').placeholder = t.pwdPlaceholder;
 
-        // 메인 화면 다국어
         document.getElementById('title-text').innerText = t.title;
         document.getElementById('lang-toggle-btn').innerText = t.langBtn;
         document.getElementById('logout-btn').innerText = t.logoutBtn;
@@ -878,9 +909,7 @@
                 });
             });
 
-            // 날짜 기준 내림차순 정렬
             salesDataStore.sort((a, b) => (b.sale_date || '').localeCompare(a.sale_date || ''));
-
             renderTableAndTotals(salesDataStore);
         } catch (error) {
             console.error('Data fetch error:', error);
@@ -913,13 +942,11 @@
 
         try {
             if (editId) {
-                // 수정 처리
                 const docRef = doc(db, 'gold_sales', editId);
                 await updateDoc(docRef, formData);
                 alert(t.updateSuccess);
                 cancelEdit();
             } else {
-                // 신규 등록 처리
                 formData.created_at = serverTimestamp();
                 await addDoc(collection(db, 'gold_sales'), formData);
                 alert(t.saveSuccess);
@@ -934,7 +961,6 @@
         }
     });
 
-    // 행 수정 선택
     function editRow(id) {
         const row = salesDataStore.find(item => item.id === id);
         if (!row) return;
@@ -969,7 +995,6 @@
         document.getElementById('btn-cancel').style.display = 'none';
     }
 
-    // 행 삭제
     async function deleteRow(id) {
         const t = translations[currentLang];
         if (!confirm(t.confirmDelete)) return;
@@ -1035,7 +1060,6 @@
             tbody.appendChild(tr);
         });
 
-        // 이벤트 리스너 바인딩
         document.querySelectorAll('.btn-edit-action').forEach(btn => {
             btn.addEventListener('click', (e) => editRow(e.target.dataset.id));
         });
@@ -1043,7 +1067,6 @@
             btn.addEventListener('click', (e) => deleteRow(e.target.dataset.id));
         });
 
-        // 대시보드 요약 정보 업데이트
         document.getElementById('val-total-count').innerText = `${data.length.toLocaleString()}${t.countUnit}`;
         document.getElementById('val-total-selling').innerText = totalSelling.toLocaleString();
         document.getElementById('val-total-cost').innerText = totalCost.toLocaleString();
@@ -1054,7 +1077,6 @@
         document.getElementById('tf-total-profit').innerText = totalProfit.toLocaleString();
     }
 
-    // 엑셀 다운로드
     function exportToExcel() {
         const t = translations[currentLang];
         if (!salesDataStore || salesDataStore.length === 0) {
@@ -1087,18 +1109,13 @@
         XLSX.writeFile(workbook, fileName);
     }
 
-    // 이벤트 리스너 설정
-    document.getElementById('auth-form').addEventListener('submit', verifyPassword);
-    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('auth-form').addEventListener('submit', handleLogin);
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
     document.getElementById('lang-toggle-btn').addEventListener('click', toggleLanguage);
     document.getElementById('btn-cancel').addEventListener('click', cancelEdit);
     document.getElementById('btn-search').addEventListener('click', loadSalesData);
     document.getElementById('btn-reset').addEventListener('click', resetFilter);
     document.getElementById('btn-excel').addEventListener('click', exportToExcel);
-
-    window.onload = () => {
-        checkAuthSession();
-    };
 </script>
 
 </body>
